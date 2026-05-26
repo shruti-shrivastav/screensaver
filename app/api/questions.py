@@ -69,7 +69,7 @@ async def solve(sid: str, qid: str, body: SolveRequest):
 @router.post("/{sid}/questions/{qid}/instruct", dependencies=[Depends(require_auth)])
 async def instruct(sid: str, qid: str, body: InstructRequest):
     _get_question_or_404(sid, qid)
-    res = handle_instruction(sid, qid, body.model, body.instruction)
+    res = await asyncio.to_thread(handle_instruction, sid, qid, body.model, body.instruction)
     if "error" in res:
         raise HTTPException(status_code=500, detail=res["error"])
     return res

@@ -58,6 +58,14 @@ export interface Question {
   created_at: string
 }
 
+export interface DialogConfig {
+  isOpen: boolean
+  title: string
+  message: string
+  type: 'alert' | 'confirm'
+  onConfirm: () => void
+}
+
 interface AppState {
   isAuthModalOpen: boolean
   setAuthModalOpen: (open: boolean) => void
@@ -70,7 +78,7 @@ interface AppState {
   
   questions: QuestionSummary[]
   setQuestions: (q: QuestionSummary[]) => void
-  
+
   currentQuestionId: string | null
   setCurrentQuestionId: (id: string | null) => void
   
@@ -82,6 +90,11 @@ interface AppState {
   
   isAnalyzing: boolean
   setIsAnalyzing: (val: boolean) => void
+
+  dialog: DialogConfig
+  showAlert: (title: string, message: string, onConfirm?: () => void) => void
+  showConfirm: (title: string, message: string, onConfirm: () => void) => void
+  closeDialog: () => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -108,4 +121,13 @@ export const useStore = create<AppState>((set) => ({
   
   isAnalyzing: false,
   setIsAnalyzing: (val) => set({ isAnalyzing: val }),
+
+  dialog: { isOpen: false, title: '', message: '', type: 'alert', onConfirm: () => {} },
+  showAlert: (title, message, onConfirm = () => {}) => set({
+    dialog: { isOpen: true, title, message, type: 'alert', onConfirm }
+  }),
+  showConfirm: (title, message, onConfirm) => set({
+    dialog: { isOpen: true, title, message, type: 'confirm', onConfirm }
+  }),
+  closeDialog: () => set((state) => ({ dialog: { ...state.dialog, isOpen: false } }))
 }))

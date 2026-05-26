@@ -10,7 +10,8 @@ import 'prismjs/themes/prism-tomorrow.css'
 const Editor = (EditorImport as any).default || EditorImport
 
 export default function SolutionPanel() {
-  const { currentSessionId, currentQuestionId, currentSolution, setCurrentSolution, setCurrentQuestion } = useStore()
+  const { currentSessionId, currentQuestionId, currentSolution, setCurrentSolution, setCurrentQuestion, showConfirm } = useStore()
+
   const [activeTab, setActiveTab] = useState('tab-solution')
   const [model, setModel] = useState('gemini-3-flash-preview')
   const [instructions, setInstructions] = useState('')
@@ -182,12 +183,13 @@ export default function SolutionPanel() {
 
   const handleReset = async () => {
     if (!currentSessionId || !currentQuestionId) return
-    if (!confirm('Reset solution state?')) return
-    stopSSE()
-    await API.post(`/api/sessions/${currentSessionId}/questions/${currentQuestionId}/reset`, {})
-    setLogs([])
-    setStreamText('')
-    setCurrentSolution(null)
+    showConfirm('Reset Solution', 'Reset solution state?', async () => {
+      stopSSE()
+      await API.post(`/api/sessions/${currentSessionId}/questions/${currentQuestionId}/reset`, {})
+      setLogs([])
+      setStreamText('')
+      setCurrentSolution(null)
+    })
   }
 
   const handleCopy = () => {

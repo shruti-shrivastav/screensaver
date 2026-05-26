@@ -73,3 +73,6 @@ Thumbs.db
 # ----------------------
 *.swp
 *.swo
+
+.htpasswd.json
+data/**

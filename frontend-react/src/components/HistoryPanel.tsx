@@ -7,7 +7,8 @@ export default function HistoryPanel() {
   const { 
     currentSessionId,
     questions, setQuestions,
-    currentQuestionId, setCurrentQuestionId, setCurrentQuestion
+    currentQuestionId, setCurrentQuestionId, setCurrentQuestion,
+    showConfirm
   } = useStore()
 
 
@@ -47,13 +48,14 @@ export default function HistoryPanel() {
   const deleteQuestion = async (e: React.MouseEvent, qid: string) => {
     e.stopPropagation()
     if (!currentSessionId) return
-    if (!confirm('Delete this question?')) return
-    await API.post(`/api/sessions/${currentSessionId}/questions/${qid}/delete`, {})
-    if (currentQuestionId === qid) {
-      setCurrentQuestionId(null)
-      setCurrentQuestion(null)
-    }
-    loadQuestions(currentSessionId)
+    showConfirm('Delete Question', 'Delete this question?', async () => {
+      await API.post(`/api/sessions/${currentSessionId}/questions/${qid}/delete`, {})
+      if (currentQuestionId === qid) {
+        setCurrentQuestionId(null)
+        setCurrentQuestion(null)
+      }
+      loadQuestions(currentSessionId)
+    })
   }
 
   return (

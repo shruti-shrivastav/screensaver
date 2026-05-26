@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -88,8 +88,9 @@ async def stream_session(sid: str):
     return EventSourceResponse(_event_gen())
 
 
+
 @router.post("/{sid}/analyze", dependencies=[Depends(require_auth)])
-async def analyze(sid: str, body: AnalyzeRequest) -> Question:
+async def analyze(request: Request, sid: str, body: AnalyzeRequest) -> Question:
     """Capture screen, call Gemini, persist question + screenshot, return Question."""
     sess = session_store.get_session(sid)
     if not sess:
@@ -100,14 +101,14 @@ async def analyze(sid: str, body: AnalyzeRequest) -> Question:
         {"id": q.id, "title": q.data.title}
         for q in existing_questions if q.data
     ]
-
+ 
     # Capture
     try:
         img_bytes = take_screenshot()
         session_store.save_frame(sid, img_bytes)
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Screen capture failed: {exc}")
-
+ 
     # Create a placeholder question while analyzing
     question = Question(
         id="analyzing",
@@ -115,10 +116,10 @@ async def analyze(sid: str, body: AnalyzeRequest) -> Question:
         status=QuestionStatus.ANALYZING,
         model_used=body.model,
     )
-
-    # Analyze with Gemini
+ 
+    # Analyze with Gemini (Fully Async)
     try:
-        result = analyze_screen(img_bytes, body.model, eq_summary, sid=sid)
+        result = await analyze_screen(img_bytes, body.model, eq_summary, sid=sid, request=request)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except RuntimeError as exc:

@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 
 from app.services.tunnel import tunnel_service
-from app.api import auth, capture, sessions, questions, tunnel as tunnel_router
+from app.api import auth, capture, sessions, questions, tunnel as tunnel_router, system
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(capture.router)
 app.include_router(sessions.router)
 app.include_router(questions.router)
 app.include_router(tunnel_router.router)
+app.include_router(system.router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

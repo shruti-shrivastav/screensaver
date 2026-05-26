@@ -49,7 +49,7 @@ RULES:
 - Return ONLY valid JSON, no markdown fences."""
 
 
-def analyze_screen(img_bytes: bytes, model: str, existing_questions: list[dict] = None, sid: str = None) -> dict:
+async def analyze_screen(img_bytes: bytes, model: str, existing_questions: list[dict] = None, sid: str = None, request = None) -> dict:
     """
     Send a screenshot to Gemini with context and extract a structured update or new question.
     Returns a dict with: 'action', 'target_id', 'data' (QuestionData).
@@ -65,7 +65,7 @@ def analyze_screen(img_bytes: bytes, model: str, existing_questions: list[dict] 
 
     try:
         from app.services.pubsub import pubsub
-        response_stream = client.models.generate_content_stream(
+        response_stream = await client.aio.models.generate_content_stream(
             model=model,
             contents=[
                 genai_types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
@@ -78,7 +78,11 @@ def analyze_screen(img_bytes: bytes, model: str, existing_questions: list[dict] 
         
         print(f"\n--- [START STREAM: {model} (Analyze)] ---")
         chunks = []
-        for chunk in response_stream:
+        async for chunk in response_stream:
+            if request and await request.is_disconnected():
+                logger.info("Client disconnected. Aborting Gemini analysis.")
+                print("\n--- [ABORTED STREAM] ---\n")
+                raise RuntimeError("Client disconnected")
             if chunk.text:
                 print(chunk.text, end="", flush=True)
                 chunks.append(chunk.text)

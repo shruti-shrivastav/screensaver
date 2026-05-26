@@ -10,7 +10,7 @@ export default function CapturePanel() {
   const { 
     currentSessionId, isAnalyzing, setIsAnalyzing, setCurrentQuestionId, setCurrentQuestion,
     sessions, setSessions, setCurrentSessionId,
-    setQuestions
+    setQuestions, showAlert
   } = useStore()
   const imgRef = useRef<HTMLImageElement>(null)
   
@@ -87,7 +87,7 @@ export default function CapturePanel() {
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        alert('Analysis failed: ' + err.message)
+        showAlert('Analysis Failed', err.message || 'An error occurred during analysis.')
       }
     } finally {
       setIsAnalyzing(false)
