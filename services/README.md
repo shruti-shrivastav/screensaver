@@ -48,14 +48,11 @@ To stop, disable, and completely remove the service configuration:
 
 ---
 
-## 🪟 Windows (NSSM Service)
+## 🪟 Windows (Native Task Scheduler)
 
-NSSM (Non-Sucking Service Manager) allows you to run the Python application as a standard Windows background service that automatically restarts on crashes.
+Windows Task Scheduler allows you to run the Python application as a standard Windows background task scheduled to run at logon (`onlogon`). This runs in your active GUI session context, which is ideal and necessary for seamless screen capture, and does not require third-party service managers like NSSM. 
 
-### Prerequisites
-
-1. Download NSSM from [https://nssm.cc/download](https://nssm.cc/download).
-2. Extract `nssm.exe` (use the 64-bit version) and add its directory to your Windows System **PATH** environment variable.
+To prevent any command prompt windows from popping up, the task is executed via a lightweight VBScript wrapper (`run_screensaver.vbs`), making it run completely hidden in the background.
 
 ### 🚀 Automated Install
 
@@ -75,21 +72,25 @@ NSSM (Non-Sucking Service Manager) allows you to run the Python application as a
 
 ### 📊 Service Management
 
-* **Start service**:
+* **Start task**:
   ```cmd
-  net start Screensaver
+  schtasks /run /tn "Screensaver"
   ```
-* **Stop service**:
+* **Stop task**:
   ```cmd
-  net stop Screensaver
+  schtasks /end /tn "Screensaver"
+  ```
+* **Check status**:
+  ```cmd
+  schtasks /query /tn "Screensaver"
   ```
 
 ---
 
 ## 💡 How the Stop/Restart Compatibility Works
 
-The backend Stop/Restart code is built to integrate seamlessly with these service managers using native Python signals and exit codes:
+The backend Stop/Restart code is built to integrate seamlessly with these service/task managers using native Python signals and exit codes:
 
-* **UI Restart Button**: Re-executes the python process cleanly using `os.execv`. Since the process image is replaced internally, the PID remains identical. The service manager (systemd or NSSM) does not even see a process exit, guaranteeing a smooth and instant restart.
-* **UI Stop Button**: Sends a native `SIGTERM` to Uvicorn for clean ASGI lifespan cleanup (stopping tunnels, database saves), then falls back to a clean exit (`os._exit(0)`). Because the exit is clean (exit code `0`), both systemd (`Restart=on-failure`) and NSSM (`AppExit 0 Exit`) recognize this as an intentional shutdown and stop the service instead of restarting it.
-* **Resilience (Crashes)**: If the server ever encounters a runtime exception or unhandled crash, it exits with a non-zero exit code. Both service managers will immediately relaunch it.
+* **UI Restart Button**: Re-executes the python process cleanly using `os.execv`. Since the process image is replaced internally, the PID remains identical. The service/task manager (systemd or Task Scheduler) does not even see a process exit, guaranteeing a smooth and instant restart.
+* **UI Stop Button**: Sends a native `SIGTERM` to Uvicorn for clean ASGI lifespan cleanup (stopping tunnels, database saves), then falls back to a clean exit (`os._exit(0)`). Because the exit is clean (exit code `0`), both systemd (`RestartPreventExitStatus=0`) and our custom Windows Task Scheduler wrapper (`run_screensaver.bat`) recognize this as an intentional shutdown and exit cleanly instead of restarting.
+* **Resilience (Crashes)**: If the server ever encounters a runtime exception or unhandled crash, it exits with a non-zero exit code. Both service/task managers (via systemd or the `run_screensaver.bat` crash recovery loop) will automatically relaunch it after a brief delay.
